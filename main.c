@@ -38,12 +38,39 @@
 #include "third_party/fatfs/src/diskio.h"
 #include "third_party/fatfs/src/ff.h"
 
+
+//*****************************************************************************
+//
+// GLOBALS AND #DEFINES
+//
+//*****************************************************************************
+
 static FATFS fs;
 static FIL configFile;
 static BYTE readBuffer[1250];
+//int16_t audioTest[900];
 static UINT bw, br;
 
 #define PI 						3.14159265359
+
+
+
+
+// THIS IS WHERE THE CIRCULAR BUFFER/BUTTON  GLOBALS ARE
+
+int16_t cBuff[1323]; // circular buffer for reading SD audio files
+int16_t *startPtr = &cBuff[0];
+int16_t *readPtr;
+int16_t *writePtr;
+
+// arrays to hold information of buttons (maybe int8_t to save on memory)
+
+int8_t latchHold[16]; // which buttons have latch/hold functionality
+int8_t playing[16]; // which buttons are playing samples
+int8_t looping[16]; // which buttons are looping - work this out later
+int8_t pressed[16]; // which buttons are pressed
+
+
 
 //*****************************************************************************
 //
@@ -339,6 +366,38 @@ void InitADC(void)
     IntEnable(INT_ADC0SS0);
 }
 
+void InitTimers(void)
+{
+	unsigned long ulDACPeriod, ulPktPeriod;
+
+    // Enable the timers used
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); // dac timer
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1); // packet of audio
+
+	// Configure the 32-bit periodic timers.
+	TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER);
+	TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER);
+
+	ulDACPeriod = (SysCtlClockGet() / 44100);// 44.1 kHz for DAC samples
+	ulPktPeriod = (SysCtlClockGet() / 100); // 10 ms timer for audio packets
+
+	TimerLoadSet(TIMER0_BASE, TIMER_A, ulDACPeriod - 1);
+	TimerLoadSet(TIMER1_BASE, TIMER_A, ulPktPeriod);
+
+	// Setup the interrupts for the timer timeouts.
+	IntEnable(INT_TIMER0A);
+	IntEnable(INT_TIMER1A);
+	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+	TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+
+	// Enable processor interrupts.
+	IntMasterEnable();
+
+	// Enable the timers.
+	TimerEnable(TIMER0_BASE, TIMER_A);
+	TimerEnable(TIMER1_BASE, TIMER_A);
+}
+
 void DACWrite(uint16_t data)
 {
 	uint16_t spidata, data2;
@@ -366,17 +425,29 @@ void SDwrite(void)
 void SDread(void)
 {
 	int i;
-	UINT length = sizeof(readBuffer);
+	int sample;
+//	UINT length = sizeof(readBuffer);
+	UINT length = sizeof(audioTest);
+	uint16_t DACBuff[];
+	char * tempStr;
 
-	f_open(&configFile, "config.txt", FA_READ | FA_WRITE | FA_OPEN_ALWAYS);
+	f_open(&configFile, "ping.wav", FA_READ);
 
-	f_read(&configFile, readBuffer, length, &br);
+	for(sample = 0; sample < length)
+
+	f_read(&configFile, audioTest, length, &br);
 
 	f_close(&configFile);
 
-	for(i = 0; i < length; i++) {
-		UARTprintf("%c", readBuffer[i]);
-	}
+//	for(i = 0; i < length; i++) {
+//		if(readBuffer[i] != '\n') {
+//			strcat(tempStr, readBuffer[i]);
+//		} else {
+//			DACBuff[sample] = (uint16_t)atoi(tempStr);
+//			sample++;
+//		}
+//		UARTprintf("%c", readBuffer[i]);
+//	}
 }
 
 void generate_sine_wave(int freq)
@@ -388,6 +459,12 @@ void generate_sine_wave(int freq)
 		UARTprintf("%d\n", testInput[i]);
 	}
 }
+
+// function to read from keypad, deal with LEDs, and update functionality arrays
+//void poll_buttons(void)
+//{
+//
+//}
 
 //*****************************************************************************
 //
@@ -424,6 +501,13 @@ main(void)
     // Initialise UART
     //
     InitUART();
+
+
+    //
+    // Initialise timers
+    //
+    InitTimers();
+
 
     //
     // Configure and enable uDMA
@@ -504,3 +588,76 @@ __error__(char *pcFilename, unsigned long ulLine)
 {
 }
 #endif
+
+//*****************************************************************************
+//
+// This is where the magic happens - reading samples from SD and polling
+// keypad buttons. Processing these packets within a circular buffer.
+//
+//*****************************************************************************
+
+// interrupt handler to fire at frequency 44.1 kHz for samples
+void SampleIntHandler(void)
+{
+	// Clear the timer interrupt
+	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+
+	DACWrite(&readPtr);
+	readPtr++;
+//	writePtr++;
+
+	if(readPtr == startPtr + 1323) {
+		readPtr = startPtr;
+	}
+}
+
+// interrupt handler to grab packets every 10 ms
+void PacketIntHandler(void)
+{
+	int16_t pkt1[441];
+	int16_t pkt2[441];
+
+	// Clear the timer interrupt
+	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+
+	//poll_buttons(); -> update pressed[] arrays
+	for(i = 0; i < 16; i++) {
+		if(pressed[i]) {
+			if(playing[i]) {
+				// read from buffer, wherelast increment pointer (not > sample length)
+				//pkt1[0] = packet from buffer
+			} else { // pressed and not playing
+				//read from sd at 0 (not > sample length)
+				//set wherelast pointer
+				//pkt1[0] = packet from sd
+				//playing[i] = 1;
+			}
+		} else {
+			if(playing[i]) { // not pressed and playing
+				if(latch[i]) { // latch
+					//if(!samplelength) { // still data to read
+						//keep going
+					//} else { // end of sample -> finish
+						//fill with 0s
+					//}
+					//pkt1[0] =
+				} else { // hold
+					// reset wherelast pointer
+					//playing[i] = 0;
+				}
+			}
+		}
+	}
+	// if there are more than one playing, which ones should be playing?
+	// convolve (add together and take mean)
+
+	// final samples array
+	// apply FX
+	cBuff[]
+	memcpy()
+	writePtr += 441;
+//	if(writePtr == startPtr + 1323) {
+//		writePtr = 0;
+//	}
+}
+

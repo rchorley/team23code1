@@ -54,6 +54,8 @@ extern unsigned long __STACK_TOP;
 //*****************************************************************************
 extern void SysTickHandler(void);
 extern void USB0DeviceIntHandler(void);
+extern void SampleIntHandler(void);
+extern void PacketIntHandler(void);
 
 //*****************************************************************************
 //
@@ -101,9 +103,9 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // ADC Sequence 2
     IntDefaultHandler,                      // ADC Sequence 3
     IntDefaultHandler,                      // Watchdog timer
-    IntDefaultHandler,                      // Timer 0 subtimer A
+    SampleIntHandler,                      // Timer 0 subtimer A
     IntDefaultHandler,                      // Timer 0 subtimer B
-    IntDefaultHandler,                      // Timer 1 subtimer A
+    PacketIntHandler,                      // Timer 1 subtimer A
     IntDefaultHandler,                      // Timer 1 subtimer B
     IntDefaultHandler,                      // Timer 2 subtimer A
     IntDefaultHandler,                      // Timer 2 subtimer B
