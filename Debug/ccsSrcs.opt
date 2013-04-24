@@ -1,0 +1,1 @@
+"C:/StellarisWare/utils/cmdline.c" "C:/StellarisWare/third_party/fatfs/src/ff.c" "../main.c" "C:/StellarisWare/third_party/fatfs/port/mmc-ek-lm4f232h5qd.c" "../startup_ccs.c" "C:/StellarisWare/utils/uartstdio.c" "../usb_msc_structs.c" "../usbdsdcard.c" "C:/StellarisWare/utils/ustdlib.c" 

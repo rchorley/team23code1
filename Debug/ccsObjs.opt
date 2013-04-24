@@ -1,0 +1,1 @@
+"./ustdlib.obj" "./usbdsdcard.obj" "./usb_msc_structs.obj" "./uartstdio.obj" "./startup_ccs.obj" "./mmc-ek-lm4f232h5qd.obj" "./main.obj" "./ff.obj" "./cmdline.obj" -l"C:\StellarisWare\driverlib\ccs-cm4f\Debug\driverlib-cm4f.lib" -l"C:\StellarisWare\usblib\ccs-cm4f\Debug\usblib-cm4f.lib" -l"libc.a" "../lm4f120h5qr.cmd" 

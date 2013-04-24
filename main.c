@@ -47,29 +47,30 @@
 
 static FATFS fs;
 static FIL configFile;
-static BYTE readBuffer[1250];
-//int16_t audioTest[900];
+//static BYTE readBuffer[1250];
+uint16_t audioBuffer[441];
 static UINT bw, br;
 
 #define PI 						3.14159265359
-
-
-
+#define SIZE_OF_PACKET			441
 
 // THIS IS WHERE THE CIRCULAR BUFFER/BUTTON  GLOBALS ARE
 
-int16_t cBuff[1323]; // circular buffer for reading SD audio files
-int16_t *startPtr = &cBuff[0];
-int16_t *readPtr;
-int16_t *writePtr;
+uint16_t cBuff[1323]; // circular buffer for reading SD audio files
+uint16_t *startPtr = &cBuff[0];
+uint16_t *readPtr = &cBuff[0];
+uint16_t *writePtr = &cBuff[882];
 
 // arrays to hold information of buttons (maybe int8_t to save on memory)
 
-int8_t latchHold[16]; // which buttons have latch/hold functionality
+int8_t latchHold[16]; // which buttons have latch/hold functionality 1 = latch, 0 = hold
 int8_t playing[16]; // which buttons are playing samples
 int8_t looping[16]; // which buttons are looping - work this out later
 int8_t pressed[16]; // which buttons are pressed
 
+uint32_t sampleLength[16]; // length of each sample
+uint32_t whereLast[16]; // how far through the sample we're looking at
+const char * fileArr[16][6] = {"00.dat", "01.dat", "02.dat", "03.dat", "04.dat", "05.dat", "06.dat", "07.dat", "08.dat", "09.dat", "10.dat", "11.dat", "12.dat", "13.dat", "14.dat", "15.dat"};
 
 
 //*****************************************************************************
@@ -422,43 +423,98 @@ void SDwrite(void)
     f_close(&configFile);
 }
 
-void SDread(void)
+//void SDread(void)
+//{
+//	int i;
+//	int sample;
+////	UINT length = sizeof(readBuffer);
+//	UINT length = sizeof(audioTest);
+//	uint16_t DACBuff[];
+//	char * tempStr;
+//
+//	f_open(&configFile, "ping.wav", FA_READ);
+//
+//	for(sample = 0; sample < length)
+//
+//	f_read(&configFile, audioTest, length, &br);
+//
+//	f_close(&configFile);
+//}
+
+
+// read from the SD card a sample which is assigned to a certain key
+//uint16_t * SDread(int8_t sampleNumber)
+//{
+//
+//	// samples are maximum of 705692 bytes with 44 bytes of header
+//
+//	int sample;
+//	UINT length = sizeof(audioBuffer);
+//
+//	f_open(&configFile, "config.txt", FA_OPEN_EXISTING | FA_READ);
+//	f_lseek(&configFile, SIZE_OF_PACKET*);
+//	f_read(&configFile, audioBuffer, length, &br);
+//
+//	f_close(&configFile);
+//}
+
+uint8_t SD_read_wav(int8_t button, uint16_t * returnPtr)
 {
+
+	// samples are maximum of 705692 bytes with 44 bytes of header
+	static FIL sampleFile;
 	int i;
-	int sample;
-//	UINT length = sizeof(readBuffer);
-	UINT length = sizeof(audioTest);
-	uint16_t DACBuff[];
-	char * tempStr;
+	uint8_t fileEnded = 0;
 
-	f_open(&configFile, "ping.wav", FA_READ);
+//	UINT length = sizeof(audioBuffer);
 
-	for(sample = 0; sample < length)
+	const char * filename = fileArr[button][0];
 
-	f_read(&configFile, audioTest, length, &br);
+	UARTprintf("filename = %s\n", filename);
 
-	f_close(&configFile);
+	f_open(&sampleFile, filename, FA_OPEN_EXISTING | FA_READ);
 
-//	for(i = 0; i < length; i++) {
-//		if(readBuffer[i] != '\n') {
-//			strcat(tempStr, readBuffer[i]);
-//		} else {
-//			DACBuff[sample] = (uint16_t)atoi(tempStr);
-//			sample++;
-//		}
-//		UARTprintf("%c", readBuffer[i]);
-//	}
-}
+//	f_lseek(&sampleFile, whereLast[button]);
 
-void generate_sine_wave(int freq)
-{
-	uint16_t testInput[441];
-	int i;
-	for (i = 0; i <= 441; i++) {
-		testInput[i] = floor(2048*(sin(freq * (2 * PI) * i / 44100))+2048);
-		UARTprintf("%d\n", testInput[i]);
+	for(i = 0; i < SIZE_OF_PACKET; i++) {
+		uint8_t arr[2];
+		int16_t x = 0;
+		int16_t size = sampleFile.fsize;
+		if((whereLast[button] + 2*i) < size) {
+			f_read(&sampleFile, &arr[0], 2, &x);
+			uint16_t sample = arr[1] | (arr[0] << 8);
+			*returnPtr = sample;
+		} else {
+			*returnPtr = 0;
+			fileEnded = 1;
+		}
+
+		UARTprintf("f_size = %d\n", size);
+//		UARTprintf("arr1 = %x\narr0 = %x\nsample = %x\nx = %d\n", arr[1], arr[2], sample, x);
 	}
+//	if(fileEnded) {
+//		whereLast[button] = 0;
+//	} else {
+		whereLast[button] += SIZE_OF_PACKET*2;
+//	}
+//	f_read(&sampleFile, audioBuffer, SIZE_OF_PACKET, NULL);
+
+	f_close(&sampleFile);
+
+	return fileEnded;
 }
+
+
+
+//void generate_sine_wave(int freq)
+//{
+//	uint16_t testInput[441];
+//	int i;
+//	for (i = 0; i <= 441; i++) {
+//		testInput[i] = floor(2048*(sin(freq * (2 * PI) * i / 44100))+2048);
+//		UARTprintf("%d\n", testInput[i]);
+//	}
+//}
 
 // function to read from keypad, deal with LEDs, and update functionality arrays
 //void poll_buttons(void)
@@ -506,7 +562,7 @@ main(void)
     //
     // Initialise timers
     //
-    InitTimers();
+//    InitTimers();
 
 
     //
@@ -570,7 +626,7 @@ main(void)
 //    SDwrite();
 
 //    UARTprintf("reading\n");
-    SDread();
+//    SD_read_wav(0);
 //    generate_sine_wave(1000);
     while(1){
     	;
@@ -602,62 +658,77 @@ void SampleIntHandler(void)
 	// Clear the timer interrupt
 	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 
-	DACWrite(&readPtr);
+	DACWrite(*readPtr);
 	readPtr++;
-//	writePtr++;
 
 	if(readPtr == startPtr + 1323) {
-		readPtr = startPtr;
+		readPtr = startPtr; // go back to start of buffer
 	}
 }
 
 // interrupt handler to grab packets every 10 ms
 void PacketIntHandler(void)
 {
-	int16_t pkt1[441];
-	int16_t pkt2[441];
+	int16_t pkt1[SIZE_OF_PACKET];
+	int16_t pkt2[SIZE_OF_PACKET];
+	int8_t i;
 
 	// Clear the timer interrupt
 	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
 
 	//poll_buttons(); -> update pressed[] arrays
+
 	for(i = 0; i < 16; i++) {
 		if(pressed[i]) {
 			if(playing[i]) {
-				// read from buffer, wherelast increment pointer (not > sample length)
-				//pkt1[0] = packet from buffer
-			} else { // pressed and not playing
-				//read from sd at 0 (not > sample length)
-				//set wherelast pointer
-				//pkt1[0] = packet from sd
-				//playing[i] = 1;
+//				if(whereLast[i] < sampleLength[i]) { // still within sample
+					// read from buffer, wherelast increment pointer (not > sample length)
+					SD_read_wav(i, &pkt1[0]);
+					playing[i] = 1;
+					//whereLast[i] += SIZE_OF_PACKET;
+//				} else { // end of sample
+//					playing[i] = 0;
+//				}
+//			} else { // pressed and not playing
+//				if(whereLast[i] < sampleLength[i]) { // still within sample
+//					//pkt1[0] = SDread(i); read from sd at 0 (not > sample length)
+//					//whereLast[i] += SIZE_OF_PACKET;
+//					//playing[i] = 1;
+//				} else { // end of sample
+//					playing[i] = 0;
+//				}
 			}
 		} else {
 			if(playing[i]) { // not pressed and playing
-				if(latch[i]) { // latch
-					//if(!samplelength) { // still data to read
-						//keep going
+				if(latchHold[i]) { // latch
+					uint8_t fileEnded = SD_read_wav(i, &pkt1[0]);
+					if(fileEnded) {
+						playing[i] = 0;
+					}
+//					if(whereLast[i] < sampleLength[i]) { // still within sample
+//						pkt1[0] = SDread(i);
 					//} else { // end of sample -> finish
 						//fill with 0s
 					//}
-					//pkt1[0] =
 				} else { // hold
-					// reset wherelast pointer
+					playing[i] = 0;
+					//whereLast = 0;
 					//playing[i] = 0;
 				}
 			}
 		}
+	}
 	}
 	// if there are more than one playing, which ones should be playing?
 	// convolve (add together and take mean)
 
 	// final samples array
 	// apply FX
-	cBuff[]
-	memcpy()
-	writePtr += 441;
+//	cBuff[]
+//	memcpy()
+//	writePtr += SIZE_OF_PACKET;
 //	if(writePtr == startPtr + 1323) {
 //		writePtr = 0;
 //	}
-}
+//}
 
