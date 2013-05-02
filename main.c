@@ -350,24 +350,31 @@ void InitDAC(void)
 void InitADC(void)
 {
     // The ADC peripheral(s) must be enabled for use.
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC1);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
 
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
 
+    SysCtlADCSpeedSet(SYSCTL_ADCSPEED_500KSPS);
+
     GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_2);
 
-    ADCSequenceConfigure(ADC1_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+//    ADCSequenceDisable(ADC0_BASE, 1);
 
-    ADCSequenceStepConfigure(ADC1_BASE, 0, 0, ADC_CTL_CH1 | ADC_CTL_IE |
+    ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH1);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH2);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 2, ADC_CTL_CH3);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 3, ADC_CTL_CH8 | ADC_CTL_IE |
                                  ADC_CTL_END);
 
-    ADCSequenceEnable(ADC1_BASE, 0);
+    ADCSequenceEnable(ADC0_BASE, 0);
 
-    ADCIntClear(ADC1_BASE, 0);
+    ADCIntEnable(ADC0_BASE, 0);
 
-    ADCIntEnable(ADC1_BASE, 0);
+    IntEnable(INT_ADC0SS0);
 
-    IntEnable(INT_ADC1SS0);
+    ADCIntClear(ADC0_BASE, 0);
 }
 
 void InitTimers(void)
@@ -528,19 +535,22 @@ void poll_buttons(void)
 
 void FXIntHandler(void)
 {
-	unsigned long ulADC1_Value[1];
-	unsigned long ulADC2_Value[1];
-	unsigned long ulADC3_Value[1];
-	unsigned long ulADC8_Value[1];
+//	UARTprintf("adc\n");
+	unsigned long ulADC0_Value[4];
+//	unsigned long ulADC2_Value[1];
+//	unsigned long ulADC3_Value[1];
+//	unsigned long ulADC8_Value[1];
 
-	while(!ADCIntStatus(ADC1_BASE, 0, false)) {
+	while(!ADCIntStatus(ADC0_BASE, 0, false)) {
 	}
 
-	ADCIntClear(ADC1_BASE, 0);
+	ADCIntClear(ADC0_BASE, 0);
 
-	ADCSequenceDataGet(ADC1_BASE, 0, ulADC1_Value);
+	ADCSequenceDataGet(ADC0_BASE, 0, ulADC0_Value);
 
-	UARTprintf("AIN1 = %5d\r", ulADC1_Value[0]);
+	UARTprintf("1a = %5d, 1b = %5d, 2a = %5d, 2b = %5d\r",
+			ulADC0_Value[0]/32, ulADC0_Value[1]/32,
+			ulADC0_Value[2]/32, ulADC0_Value[3]/32);
 }
 
 //*****************************************************************************
@@ -595,6 +605,7 @@ main(void)
 
     InitDAC();
 
+    InitADC();
     //
     // Initialise Buttons
     //
@@ -667,18 +678,21 @@ main(void)
     //
     ulRetcode = disk_initialize(0);
 
-	result = f_open(&testfile, filename, FA_OPEN_EXISTING | FA_READ);
-	UARTprintf("result is %d\n", result);
-	f_close(&testfile);
+//	result = f_open(&testfile, filename, FA_OPEN_EXISTING | FA_READ);
+//	UARTprintf("result is %d\n", result);
+//	f_close(&testfile);
     //
     // Initialise timers
     //
     InitTimers();
 
 
+    UARTprintf("starting...\n");
+    while(1) {
 
-    while(1){
-    	;
+    	ADCProcessorTrigger(ADC0_BASE, 0);
+
+    	SysCtlDelay(SysCtlClockGet() / 120);
     }
 }
 
@@ -733,40 +747,40 @@ void PacketIntHandler(void)
 
 	//poll_buttons(); -> update pressed[] arrays
 
-	if (GPIOPinRead(GPIO_PORTF_BASE, GPIO_PIN_2)) {
-		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0);
-	} else {
-		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 4);
-	}
-
-	for(i = 0; i < 16; i++) {
-		if(pressed[i]) {
-//			if(playing[i]) {
-			UARTprintf("timer 2\n");
-			SD_read_wav(i, &pkt1[0]);
-//				playing[i] = 1;
+//	if (GPIOPinRead(GPIO_PORTF_BASE, GPIO_PIN_2)) {
+//		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0);
+//	} else {
+//		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 4);
+//	}
+//
+//	for(i = 0; i < 16; i++) {
+//		if(pressed[i]) {
+////			if(playing[i]) {
+//			UARTprintf("timer 2\n");
+//			SD_read_wav(i, &pkt1[0]);
+////				playing[i] = 1;
+////			}
+//		} else {
+//			if(playing[i]) { // not pressed and playing
+//				if(latchHold[i]) { // latch
+//					fileEnded = SD_read_wav(i, &pkt1[0]);
+//					if(fileEnded) {
+//						playing[i] = 0;
+//					}
+//				} else { // hold
+//					playing[i] = 0;
+//				}
 //			}
-		} else {
-			if(playing[i]) { // not pressed and playing
-				if(latchHold[i]) { // latch
-					fileEnded = SD_read_wav(i, &pkt1[0]);
-					if(fileEnded) {
-						playing[i] = 0;
-					}
-				} else { // hold
-					playing[i] = 0;
-				}
-			}
-		}
-	}
-	if(pressed[0]){
-		UARTprintf("if\n");
-		for(i = 0; i < SIZE_OF_PACKET; i++) {
-			cBuff[i] = pkt1[i];
-//			UARTprintf("pkt1 = %d\n", pkt1[i]);
-		}
-	}
-	pressed[0] = 0;
+//		}
+//	}
+//	if(pressed[0]){
+//		UARTprintf("if\n");
+//		for(i = 0; i < SIZE_OF_PACKET; i++) {
+//			cBuff[i] = pkt1[i];
+////			UARTprintf("pkt1 = %d\n", pkt1[i]);
+//		}
+//	}
+//	pressed[0] = 0;
 }
 
 
