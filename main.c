@@ -68,7 +68,7 @@ int8_t playing[16]; // which buttons are playing samples
 int8_t looping[16]; // which buttons are looping - work this out later
 int8_t pressed[16]; // which buttons are pressed
 
-uint32_t sampleLength[16]; // length of each sample
+//uint32_t sampleLength[16]; // length of each sample
 uint32_t whereLast[16]; // how far through the sample we're looking at
 const char * fileArr[16][6] = {"00.dat", "01.dat", "02.dat", "03.dat", "04.dat", "05.dat", "06.dat", "07.dat", "08.dat", "09.dat", "10.dat", "11.dat", "12.dat", "13.dat", "14.dat", "15.dat"};
 
@@ -326,45 +326,48 @@ void InitUART(void)
 
 void InitDAC(void)
 {
-	// enable SSI0 for DAC
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+//	unsigned long temp;
+
+	// enable SSI1 for DAC
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI2);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 
 	// configure DAC SSI pins
-	GPIOPinConfigure(GPIO_PA2_SSI0CLK); // jtag 2.10
-	GPIOPinConfigure(GPIO_PA3_SSI0FSS); // jtag 2.09
-	GPIOPinConfigure(GPIO_PA5_SSI0TX); // jtag 1.08
-	GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_5 | GPIO_PIN_3 | GPIO_PIN_2);
+	GPIOPinConfigure(GPIO_PB4_SSI2CLK); // jtag 3.03
+	GPIOPinConfigure(GPIO_PB5_SSI2FSS); // jtag 3.04
+	GPIOPinConfigure(GPIO_PB7_SSI2TX); // jtag 3.06
+	GPIOPinTypeSSI(GPIO_PORTB_BASE, GPIO_PIN_7 | GPIO_PIN_5 | GPIO_PIN_4);
 
 	// Clock speed for DAC
-	SSIConfigSetExpClk(SSI0_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
+	SSIConfigSetExpClk(SSI2_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
 	                       SSI_MODE_MASTER, 1000000, 16);
 
 	// Enable SSI
-	SSIEnable(SSI0_BASE);
+	SSIEnable(SSI2_BASE);
+//	while(SSIDataGetNonBlocking(SSI2_BASE, &temp));
 }
 
 void InitADC(void)
 {
-    // The ADC0 peripheral must be enabled for use.
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
+    // The ADC peripheral(s) must be enabled for use.
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC1);
 
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
 
     GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_2);
 
-    ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+    ADCSequenceConfigure(ADC1_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
 
-    ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH1 | ADC_CTL_IE |
+    ADCSequenceStepConfigure(ADC1_BASE, 0, 0, ADC_CTL_CH1 | ADC_CTL_IE |
                                  ADC_CTL_END);
 
-    ADCSequenceEnable(ADC0_BASE, 0);
+    ADCSequenceEnable(ADC1_BASE, 0);
 
-    ADCIntClear(ADC0_BASE, 0);
+    ADCIntClear(ADC1_BASE, 0);
 
-    ADCIntEnable(ADC0_BASE, 0);
+    ADCIntEnable(ADC1_BASE, 0);
 
-    IntEnable(INT_ADC0SS0);
+    IntEnable(INT_ADC1SS0);
 }
 
 void InitTimers(void)
@@ -376,8 +379,8 @@ void InitTimers(void)
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1); // packet of audio
 
 	// Configure the 32-bit periodic timers.
-	TimerConfigure(TIMER0_BASE, TIMER_CFG_32_BIT_PER);
-	TimerConfigure(TIMER1_BASE, TIMER_CFG_32_BIT_PER);
+	TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
+	TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC);
 
 	ulDACPeriod = (SysCtlClockGet() / 44100);// 44.1 kHz for DAC samples
 	ulPktPeriod = (SysCtlClockGet() / 100); // 10 ms timer for audio packets
@@ -385,18 +388,41 @@ void InitTimers(void)
 	TimerLoadSet(TIMER0_BASE, TIMER_A, ulDACPeriod - 1);
 	TimerLoadSet(TIMER1_BASE, TIMER_A, ulPktPeriod);
 
-	// Setup the interrupts for the timer timeouts.
-	IntEnable(INT_TIMER0A);
-	IntEnable(INT_TIMER1A);
-	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
-
 	// Enable processor interrupts.
-	IntMasterEnable();
+//	IntMasterEnable();
 
 	// Enable the timers.
 	TimerEnable(TIMER0_BASE, TIMER_A);
 	TimerEnable(TIMER1_BASE, TIMER_A);
+
+	// Setup the interrupts for the timer timeouts.
+
+	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+	TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+	IntEnable(INT_TIMER0A);
+	IntEnable(INT_TIMER1A);
+}
+
+void InitButtons(void)
+{
+	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5 |
+			GPIO_PIN_6 | GPIO_PIN_7);
+
+	GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_1 |
+				GPIO_PIN_2 | GPIO_PIN_3);
+
+	// set pull down resistors for the 'reading' port (port D)
+	GPIOPadConfigSet(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_1 |
+				GPIO_PIN_2 | GPIO_PIN_3, GPIO_STRENGTH_2MA,
+				GPIO_PIN_TYPE_STD_WPD);
+
+	// set direction of ports
+	GPIODirModeSet(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_1 |
+			GPIO_PIN_2 | GPIO_PIN_3, GPIO_DIR_MODE_IN);
+
+	GPIODirModeSet(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5 |
+			GPIO_PIN_6 | GPIO_PIN_7, GPIO_DIR_MODE_OUT);
+
 }
 
 void DACWrite(uint16_t data)
@@ -407,91 +433,54 @@ void DACWrite(uint16_t data)
 
 	spidata = (data2 | 0x3000); // 0x3000 = command before 12 bits of data
 
-	SSIDataPut(SSI0_BASE, spidata);
+	SSIDataPut(SSI2_BASE, spidata);
+//	SSIDataPut(SSI2_BASE, 0x1234);
 
-	while(SSIBusy(SSI0_BASE))
+	while(SSIBusy(SSI2_BASE))
 	{
 	}
 }
 
-void SDwrite(void)
-{
-    f_open(&configFile, "config4.txt", FA_READ | FA_WRITE | FA_OPEN_ALWAYS);
-
-    f_write(&configFile, "configure stuff\n", 16, &bw);
-
-    f_close(&configFile);
-}
-
-//void SDread(void)
-//{
-//	int i;
-//	int sample;
-////	UINT length = sizeof(readBuffer);
-//	UINT length = sizeof(audioTest);
-//	uint16_t DACBuff[];
-//	char * tempStr;
-//
-//	f_open(&configFile, "ping.wav", FA_READ);
-//
-//	for(sample = 0; sample < length)
-//
-//	f_read(&configFile, audioTest, length, &br);
-//
-//	f_close(&configFile);
-//}
-
-
-// read from the SD card a sample which is assigned to a certain key
-//uint16_t * SDread(int8_t sampleNumber)
-//{
-//
-//	// samples are maximum of 705692 bytes with 44 bytes of header
-//
-//	int sample;
-//	UINT length = sizeof(audioBuffer);
-//
-//	f_open(&configFile, "config.txt", FA_OPEN_EXISTING | FA_READ);
-//	f_lseek(&configFile, SIZE_OF_PACKET*);
-//	f_read(&configFile, audioBuffer, length, &br);
-//
-//	f_close(&configFile);
-//}
 
 uint8_t SD_read_wav(int8_t button, uint16_t * returnPtr)
 {
-
-	// samples are maximum of 705692 bytes with 44 bytes of header
 	static FIL sampleFile;
-	int i;
+	int k;
 	uint8_t fileEnded = 0;
-
-//	UINT length = sizeof(audioBuffer);
-
 	const char * filename = fileArr[button][0];
-
+	int32_t size;
+	uint16_t result;
 	UARTprintf("filename = %s\n", filename);
 
-	f_open(&sampleFile, filename, FA_OPEN_EXISTING | FA_READ);
-
+	result = f_open(&sampleFile, filename, FA_OPEN_EXISTING | FA_READ);
+	size = sampleFile.fsize;
 //	f_lseek(&sampleFile, whereLast[button]);
+	UARTprintf("f_size = %d\nresult = %d\n", size, result);
 
-	for(i = 0; i < SIZE_OF_PACKET; i++) {
+	for(k = 0; k < SIZE_OF_PACKET; k++) {
 		uint8_t arr[2];
 		int16_t x = 0;
-		int16_t size = sampleFile.fsize;
-		if((whereLast[button] + 2*i) < size) {
-			f_read(&sampleFile, &arr[0], 2, &x);
+
+		if((whereLast[button] + 2*k) < size) {
+			result = f_read(&sampleFile, &arr[0], 2, &x);
 			uint16_t sample = arr[1] | (arr[0] << 8);
+			UARTprintf("arr0 = %x, arr1 = %x, x = %d\n", arr[0], arr[1], result);
 			*returnPtr = sample;
+//			UARTprintf("sample = %d\n", sample);
 		} else {
 			*returnPtr = 0;
 			fileEnded = 1;
 		}
 
-		UARTprintf("f_size = %d\n", size);
+		returnPtr++;
+
+//		if(returnPtr == startPtr + 1323){
+//			returnPtr = startPtr;
+//		}
+
 //		UARTprintf("arr1 = %x\narr0 = %x\nsample = %x\nx = %d\n", arr[1], arr[2], sample, x);
 	}
+	UARTprintf("%d\n", whereLast[button]);
 //	if(fileEnded) {
 //		whereLast[button] = 0;
 //	} else {
@@ -504,23 +493,55 @@ uint8_t SD_read_wav(int8_t button, uint16_t * returnPtr)
 	return fileEnded;
 }
 
-
-
-//void generate_sine_wave(int freq)
-//{
-//	uint16_t testInput[441];
-//	int i;
-//	for (i = 0; i <= 441; i++) {
-//		testInput[i] = floor(2048*(sin(freq * (2 * PI) * i / 44100))+2048);
-//		UARTprintf("%d\n", testInput[i]);
-//	}
-//}
-
 // function to read from keypad, deal with LEDs, and update functionality arrays
-//void poll_buttons(void)
-//{
-//
-//}
+void poll_buttons(void)
+{
+	int8_t row, col;
+	int8_t active = 0;
+
+	//
+	unsigned char rowArray[4] = {GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7};
+	unsigned char colArray[4] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3};
+	int8_t button;
+
+	// we need to know which gpio pins to read from and what order to
+	// determine which buttons have been pressed.
+
+//	GPIOPinWrite(GPIO_PORTB_BASE, rowArray[row], 0); // set low
+
+	for(row = 0; row < 4; row++) {
+
+		GPIOPinWrite(GPIO_PORTB_BASE, rowArray[row], rowArray[row]); // set high
+
+		for(col = 0; col < 4 ; col++) {
+
+			active = GPIOPinRead(GPIO_PORTD_BASE, colArray[col]); // read
+
+			if(active) { // button has been pressed
+				button = 4*row + col - 5;
+				pressed[button] = 1;
+			}
+		}
+		GPIOPinWrite(GPIO_PORTB_BASE, rowArray[row], 0); // set low
+	}
+}
+
+void FXIntHandler(void)
+{
+	unsigned long ulADC1_Value[1];
+	unsigned long ulADC2_Value[1];
+	unsigned long ulADC3_Value[1];
+	unsigned long ulADC8_Value[1];
+
+	while(!ADCIntStatus(ADC1_BASE, 0, false)) {
+	}
+
+	ADCIntClear(ADC1_BASE, 0);
+
+	ADCSequenceDataGet(ADC1_BASE, 0, ulADC1_Value);
+
+	UARTprintf("AIN1 = %5d\r", ulADC1_Value[0]);
+}
 
 //*****************************************************************************
 //
@@ -531,14 +552,53 @@ int
 main(void)
 {
     unsigned long ulRetcode;
+    int i = 0;
+    int16_t result;
+
+    char * filename = "00.dat";
+    FIL testfile;
 
     ROM_FPULazyStackingEnable();
 
+    for(i = 0; i < 16; i++) {
+    	pressed[i] = 0;
+    	latchHold[i] = 1;
+    	playing[i] = 0;
+    	looping[i] = 0;
+    	whereLast[i] = 0;
+    }
+
+    for(i = 0; i < 1323; i++) {
+    	cBuff[i] = 0;
+    }
+
+    pressed[0] = 1;
     //
     // Set the system clock to run at MHz from the PLL.
     //
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
                        SYSCTL_XTAL_16MHZ);
+
+    // register work area
+    f_mount(0, &fs);
+
+    //
+    // Enable and configure the GPIO port for the LED operation.
+    //
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3);
+
+    //
+    // Initialise UART
+    //
+    InitUART();
+
+    InitDAC();
+
+    //
+    // Initialise Buttons
+    //
+//    InitButtons();
 
     //
     // Configure SysTick for a 100Hz interrupt.  The FatFs driver wants a 10 ms
@@ -549,21 +609,9 @@ main(void)
     ROM_SysTickIntEnable();
 
     //
-    // Enable Interrupts
-    //
-    ROM_IntMasterEnable();
-
-    //
-    // Initialise UART
-    //
-    InitUART();
-
-
-    //
-    // Initialise timers
-    //
-//    InitTimers();
-
+	// Enable Interrupts
+	//
+	ROM_IntMasterEnable();
 
     //
     // Configure and enable uDMA
@@ -619,15 +667,16 @@ main(void)
     //
     ulRetcode = disk_initialize(0);
 
-    // register work area
-    f_mount(0, &fs);
+	result = f_open(&testfile, filename, FA_OPEN_EXISTING | FA_READ);
+	UARTprintf("result is %d\n", result);
+	f_close(&testfile);
+    //
+    // Initialise timers
+    //
+    InitTimers();
 
-//    UARTprintf("writing\n");
-//    SDwrite();
 
-//    UARTprintf("reading\n");
-//    SD_read_wav(0);
-//    generate_sine_wave(1000);
+
     while(1){
     	;
     }
@@ -655,15 +704,15 @@ __error__(char *pcFilename, unsigned long ulLine)
 // interrupt handler to fire at frequency 44.1 kHz for samples
 void SampleIntHandler(void)
 {
-	// Clear the timer interrupt
+//	// Clear the timer interrupt
 	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-
-	DACWrite(*readPtr);
-	readPtr++;
-
-	if(readPtr == startPtr + 1323) {
-		readPtr = startPtr; // go back to start of buffer
-	}
+////
+//	DACWrite(*readPtr);
+//	readPtr++;
+//
+//	if(readPtr == startPtr + 1323) {
+//		readPtr = startPtr; // go back to start of buffer
+//	}
 }
 
 // interrupt handler to grab packets every 10 ms
@@ -671,64 +720,66 @@ void PacketIntHandler(void)
 {
 	int16_t pkt1[SIZE_OF_PACKET];
 	int16_t pkt2[SIZE_OF_PACKET];
-	int8_t i;
+	int i;
+	uint8_t fileEnded;
+	
+//	pressed[0] = (pressed[0] + 1)%2;
 
+
+
+//	UARTprintf("pressed = %d\n", pressed[0]);
 	// Clear the timer interrupt
 	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
 
 	//poll_buttons(); -> update pressed[] arrays
 
+	if (GPIOPinRead(GPIO_PORTF_BASE, GPIO_PIN_2)) {
+		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, 0);
+	} else {
+		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 4);
+	}
+
 	for(i = 0; i < 16; i++) {
 		if(pressed[i]) {
-			if(playing[i]) {
-//				if(whereLast[i] < sampleLength[i]) { // still within sample
-					// read from buffer, wherelast increment pointer (not > sample length)
-					SD_read_wav(i, &pkt1[0]);
-					playing[i] = 1;
-					//whereLast[i] += SIZE_OF_PACKET;
-//				} else { // end of sample
-//					playing[i] = 0;
-//				}
-//			} else { // pressed and not playing
-//				if(whereLast[i] < sampleLength[i]) { // still within sample
-//					//pkt1[0] = SDread(i); read from sd at 0 (not > sample length)
-//					//whereLast[i] += SIZE_OF_PACKET;
-//					//playing[i] = 1;
-//				} else { // end of sample
-//					playing[i] = 0;
-//				}
-			}
+//			if(playing[i]) {
+			UARTprintf("timer 2\n");
+			SD_read_wav(i, &pkt1[0]);
+//				playing[i] = 1;
+//			}
 		} else {
 			if(playing[i]) { // not pressed and playing
 				if(latchHold[i]) { // latch
-					uint8_t fileEnded = SD_read_wav(i, &pkt1[0]);
+					fileEnded = SD_read_wav(i, &pkt1[0]);
 					if(fileEnded) {
 						playing[i] = 0;
 					}
-//					if(whereLast[i] < sampleLength[i]) { // still within sample
-//						pkt1[0] = SDread(i);
-					//} else { // end of sample -> finish
-						//fill with 0s
-					//}
 				} else { // hold
 					playing[i] = 0;
-					//whereLast = 0;
-					//playing[i] = 0;
 				}
 			}
 		}
 	}
+	if(pressed[0]){
+		UARTprintf("if\n");
+		for(i = 0; i < SIZE_OF_PACKET; i++) {
+			cBuff[i] = pkt1[i];
+//			UARTprintf("pkt1 = %d\n", pkt1[i]);
+		}
 	}
-	// if there are more than one playing, which ones should be playing?
-	// convolve (add together and take mean)
+	pressed[0] = 0;
+}
 
-	// final samples array
-	// apply FX
-//	cBuff[]
-//	memcpy()
-//	writePtr += SIZE_OF_PACKET;
-//	if(writePtr == startPtr + 1323) {
-//		writePtr = 0;
-//	}
-//}
+
+//	// if there are more than one playing, which ones should be playing?
+//	// convolve (add together and take mean)
+//
+//	// final samples array
+//	// apply FX
+////	cBuff[]
+////	memcpy()
+////	writePtr += SIZE_OF_PACKET;
+////	if(writePtr == startPtr + 1323) {
+////		writePtr = 0;
+////	}
+////}
 
