@@ -9,6 +9,7 @@ CMD_SRCS += \
 C_SRCS += \
 C:/StellarisWare/utils/cmdline.c \
 C:/StellarisWare/third_party/fatfs/src/ff.c \
+../init.c \
 ../main.c \
 C:/StellarisWare/third_party/fatfs/port/mmc-ek-lm4f232h5qd.c \
 ../startup_ccs.c \
@@ -20,6 +21,7 @@ C:/StellarisWare/utils/ustdlib.c
 OBJS += \
 ./cmdline.obj \
 ./ff.obj \
+./init.obj \
 ./main.obj \
 ./mmc-ek-lm4f232h5qd.obj \
 ./startup_ccs.obj \
@@ -31,6 +33,7 @@ OBJS += \
 C_DEPS += \
 ./cmdline.pp \
 ./ff.pp \
+./init.pp \
 ./main.pp \
 ./mmc-ek-lm4f232h5qd.pp \
 ./startup_ccs.pp \
@@ -42,6 +45,7 @@ C_DEPS += \
 C_DEPS__QUOTED += \
 "cmdline.pp" \
 "ff.pp" \
+"init.pp" \
 "main.pp" \
 "mmc-ek-lm4f232h5qd.pp" \
 "startup_ccs.pp" \
@@ -53,6 +57,7 @@ C_DEPS__QUOTED += \
 OBJS__QUOTED += \
 "cmdline.obj" \
 "ff.obj" \
+"init.obj" \
 "main.obj" \
 "mmc-ek-lm4f232h5qd.obj" \
 "startup_ccs.obj" \
@@ -64,6 +69,7 @@ OBJS__QUOTED += \
 C_SRCS__QUOTED += \
 "C:/StellarisWare/utils/cmdline.c" \
 "C:/StellarisWare/third_party/fatfs/src/ff.c" \
+"../init.c" \
 "../main.c" \
 "C:/StellarisWare/third_party/fatfs/port/mmc-ek-lm4f232h5qd.c" \
 "../startup_ccs.c" \

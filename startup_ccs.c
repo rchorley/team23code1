@@ -56,7 +56,7 @@ extern void SysTickHandler(void);
 extern void USB0DeviceIntHandler(void);
 extern void SampleIntHandler(void);
 extern void PacketIntHandler(void);
-extern void FXIntHandler(void);
+//extern void FXIntHandler(void);
 
 //*****************************************************************************
 //
@@ -99,7 +99,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // PWM Generator 1
     IntDefaultHandler,                      // PWM Generator 2
     IntDefaultHandler,                      // Quadrature Encoder 0
-    FXIntHandler,                      // ADC Sequence 0
+    IntDefaultHandler,                      // ADC Sequence 0
     IntDefaultHandler,                      // ADC Sequence 1
     IntDefaultHandler,                      // ADC Sequence 2
     IntDefaultHandler,                      // ADC Sequence 3

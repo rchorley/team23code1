@@ -38,6 +38,7 @@
 #include "third_party/fatfs/src/diskio.h"
 #include "third_party/fatfs/src/ff.h"
 
+#include "prototypes.h"
 
 //*****************************************************************************
 //
@@ -45,11 +46,12 @@
 //
 //*****************************************************************************
 
-static FATFS fs;
-static FIL configFile;
+FATFS fs;
+//static FIL configFile;
 //static BYTE readBuffer[1250];
 uint16_t audioBuffer[441];
-static UINT bw, br;
+//UINT bw, br;
+
 
 #define PI 						3.14159265359
 #define SIZE_OF_PACKET			441
@@ -62,6 +64,13 @@ uint16_t *readPtr = &cBuff[0];
 uint16_t *writePtr = &cBuff[882];
 
 // arrays to hold information of buttons (maybe int8_t to save on memory)
+
+
+
+FIL sampleFile;
+DIR dir;
+FILINFO fno;
+
 
 int8_t latchHold[16]; // which buttons have latch/hold functionality 1 = latch, 0 = hold
 int8_t playing[16]; // which buttons are playing samples
@@ -313,125 +322,6 @@ SysTickHandler(void)
     }
 }
 
-void InitUART(void)
-{
-	// initialise UART
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-	GPIOPinConfigure(GPIO_PA0_U0RX);
-	GPIOPinConfigure(GPIO_PA1_U0TX);
-	GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-	UARTStdioInit(0);
-}
-
-void InitDAC(void)
-{
-//	unsigned long temp;
-
-	// enable SSI1 for DAC
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI2);
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-
-	// configure DAC SSI pins
-	GPIOPinConfigure(GPIO_PB4_SSI2CLK); // jtag 3.03
-	GPIOPinConfigure(GPIO_PB5_SSI2FSS); // jtag 3.04
-	GPIOPinConfigure(GPIO_PB7_SSI2TX); // jtag 3.06
-	GPIOPinTypeSSI(GPIO_PORTB_BASE, GPIO_PIN_7 | GPIO_PIN_5 | GPIO_PIN_4);
-
-	// Clock speed for DAC
-	SSIConfigSetExpClk(SSI2_BASE, SysCtlClockGet(), SSI_FRF_MOTO_MODE_0,
-	                       SSI_MODE_MASTER, 1000000, 16);
-
-	// Enable SSI
-	SSIEnable(SSI2_BASE);
-//	while(SSIDataGetNonBlocking(SSI2_BASE, &temp));
-}
-
-void InitADC(void)
-{
-    // The ADC peripheral(s) must be enabled for use.
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
-
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-
-    SysCtlADCSpeedSet(SYSCTL_ADCSPEED_500KSPS);
-
-    GPIOPinTypeADC(GPIO_PORTE_BASE, GPIO_PIN_2);
-
-//    ADCSequenceDisable(ADC0_BASE, 1);
-
-    ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
-
-    ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH1);
-    ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH2);
-    ADCSequenceStepConfigure(ADC0_BASE, 0, 2, ADC_CTL_CH3);
-    ADCSequenceStepConfigure(ADC0_BASE, 0, 3, ADC_CTL_CH8 | ADC_CTL_IE |
-                                 ADC_CTL_END);
-
-    ADCSequenceEnable(ADC0_BASE, 0);
-
-    ADCIntEnable(ADC0_BASE, 0);
-
-    IntEnable(INT_ADC0SS0);
-
-    ADCIntClear(ADC0_BASE, 0);
-}
-
-void InitTimers(void)
-{
-	unsigned long ulDACPeriod, ulPktPeriod;
-
-    // Enable the timers used
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0); // dac timer
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1); // packet of audio
-
-	// Configure the 32-bit periodic timers.
-	TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
-	TimerConfigure(TIMER1_BASE, TIMER_CFG_PERIODIC);
-
-	ulDACPeriod = (SysCtlClockGet() / 44100);// 44.1 kHz for DAC samples
-	ulPktPeriod = (SysCtlClockGet() / 100); // 10 ms timer for audio packets
-
-	TimerLoadSet(TIMER0_BASE, TIMER_A, ulDACPeriod - 1);
-	TimerLoadSet(TIMER1_BASE, TIMER_A, ulPktPeriod);
-
-	// Enable processor interrupts.
-//	IntMasterEnable();
-
-	// Enable the timers.
-	TimerEnable(TIMER0_BASE, TIMER_A);
-	TimerEnable(TIMER1_BASE, TIMER_A);
-
-	// Setup the interrupts for the timer timeouts.
-
-	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
-	IntEnable(INT_TIMER0A);
-	IntEnable(INT_TIMER1A);
-}
-
-void InitButtons(void)
-{
-	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5 |
-			GPIO_PIN_6 | GPIO_PIN_7);
-
-	GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_1 |
-				GPIO_PIN_2 | GPIO_PIN_3);
-
-	// set pull down resistors for the 'reading' port (port D)
-	GPIOPadConfigSet(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_1 |
-				GPIO_PIN_2 | GPIO_PIN_3, GPIO_STRENGTH_2MA,
-				GPIO_PIN_TYPE_STD_WPD);
-
-	// set direction of ports
-	GPIODirModeSet(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_1 |
-			GPIO_PIN_2 | GPIO_PIN_3, GPIO_DIR_MODE_IN);
-
-	GPIODirModeSet(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5 |
-			GPIO_PIN_6 | GPIO_PIN_7, GPIO_DIR_MODE_OUT);
-
-}
-
 void DACWrite(uint16_t data)
 {
 	uint16_t spidata, data2;
@@ -448,65 +338,12 @@ void DACWrite(uint16_t data)
 	}
 }
 
-
-uint8_t SD_read_wav(int8_t button, uint16_t * returnPtr)
-{
-	static FIL sampleFile;
-	int k;
-	uint8_t fileEnded = 0;
-	const char * filename = fileArr[button][0];
-	int32_t size;
-	uint16_t result;
-	UARTprintf("filename = %s\n", filename);
-
-	result = f_open(&sampleFile, filename, FA_OPEN_EXISTING | FA_READ);
-	size = sampleFile.fsize;
-//	f_lseek(&sampleFile, whereLast[button]);
-	UARTprintf("f_size = %d\nresult = %d\n", size, result);
-
-	for(k = 0; k < SIZE_OF_PACKET; k++) {
-		uint8_t arr[2];
-		int16_t x = 0;
-
-		if((whereLast[button] + 2*k) < size) {
-			result = f_read(&sampleFile, &arr[0], 2, &x);
-			uint16_t sample = arr[1] | (arr[0] << 8);
-			UARTprintf("arr0 = %x, arr1 = %x, x = %d\n", arr[0], arr[1], result);
-			*returnPtr = sample;
-//			UARTprintf("sample = %d\n", sample);
-		} else {
-			*returnPtr = 0;
-			fileEnded = 1;
-		}
-
-		returnPtr++;
-
-//		if(returnPtr == startPtr + 1323){
-//			returnPtr = startPtr;
-//		}
-
-//		UARTprintf("arr1 = %x\narr0 = %x\nsample = %x\nx = %d\n", arr[1], arr[2], sample, x);
-	}
-	UARTprintf("%d\n", whereLast[button]);
-//	if(fileEnded) {
-//		whereLast[button] = 0;
-//	} else {
-		whereLast[button] += SIZE_OF_PACKET*2;
-//	}
-//	f_read(&sampleFile, audioBuffer, SIZE_OF_PACKET, NULL);
-
-	f_close(&sampleFile);
-
-	return fileEnded;
-}
-
 // function to read from keypad, deal with LEDs, and update functionality arrays
 void poll_buttons(void)
 {
 	int8_t row, col;
 	int8_t active = 0;
 
-	//
 	unsigned char rowArray[4] = {GPIO_PIN_4, GPIO_PIN_5, GPIO_PIN_6, GPIO_PIN_7};
 	unsigned char colArray[4] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3};
 	int8_t button;
@@ -520,38 +357,158 @@ void poll_buttons(void)
 
 		GPIOPinWrite(GPIO_PORTB_BASE, rowArray[row], rowArray[row]); // set high
 
+		SysCtlDelay(100000);
+
 		for(col = 0; col < 4 ; col++) {
 
 			active = GPIOPinRead(GPIO_PORTD_BASE, colArray[col]); // read
 
 			if(active) { // button has been pressed
-				button = 4*row + col - 5;
+				button = 4*row + col - 5; // 0-15 depending on r/c combo
 				pressed[button] = 1;
+				// change led status
 			}
 		}
+
 		GPIOPinWrite(GPIO_PORTB_BASE, rowArray[row], 0); // set low
 	}
 }
 
-void FXIntHandler(void)
+uint8_t SD_read_wav(int8_t button, uint16_t * returnPtr)
 {
-//	UARTprintf("adc\n");
-	unsigned long ulADC0_Value[4];
-//	unsigned long ulADC2_Value[1];
-//	unsigned long ulADC3_Value[1];
-//	unsigned long ulADC8_Value[1];
+//	FIL sampleFile;
+//	DIR dir;
+//	FILINFO fno;
+	int k;
+	uint8_t fileEnded = 0;
+	const char * filename = fileArr[button][0];
+	int32_t size;
+	uint16_t result;
+	UARTprintf("filename = %s\n", filename);
 
-	while(!ADCIntStatus(ADC0_BASE, 0, false)) {
+//	result = f_open(&sampleFile, filename, FA_OPEN_EXISTING | FA_READ);
+//
+//	UARTprintf("open result 1 = %d, size = %d\n", result, sampleFile.fsize);
+//
+//	f_close(&sampleFile);
+
+	result = f_open(&sampleFile, filename, FA_OPEN_EXISTING | FA_READ);
+
+	UARTprintf("open result = %d, size = %d\n", result, sampleFile.fsize);
+
+
+//	result = f_opendir(&dir, "");
+//	UARTprintf("dir open result = %d\n", result);
+//	for(;;) {
+//		result = f_readdir(&dir, &fno);
+//		if(result || !fno.fname[0]) {
+//			UARTprintf("result = %d, fno.fname = %d\n", result, fno.fname[0]);
+//			break;
+//		}
+//		else {
+//			UARTprintf("read result = %d\n", result);
+//			UARTprintf("fno = %s\n", fno.fname);
+//		}
+//	}
+
+
+
+//	UARTprintf("fsize = %d, fptr = %d, flag = %x, word = %x\n", sampleFile.fsize,
+//			sampleFile.fptr, sampleFile.flag, sampleFile.id);
+
+//	size = sampleFile.fsize;
+//	f_lseek(&sampleFile, 200);
+//	UARTprintf("f_size = %d\nresult = %d\n", size, result);
+
+	for(k = 0; k < 100; k++) {
+		uint8_t arr[2];
+		int16_t x = 0;
+
+		if((whereLast[button] + 2*k) < size) {
+			result = f_read(&sampleFile, &arr[0], 2, &x);
+			uint16_t sample = arr[1] | (arr[0] << 8);
+			if(result != 12) {
+				UARTprintf("arr0 = %x, arr1 = %x, x = %d\n", arr[0], arr[1], x);
+				UARTprintf("read result = %d, sample = %x, k = %d\n", result, sample, k);
+			}
+
+			*returnPtr = sample;
+//			UARTprintf("sample = %d\n", sample);
+		} else {
+			*returnPtr = 0;
+			fileEnded = 1;
+		}
+//
+		returnPtr++;
+//
+//		if(returnPtr == startPtr + 1323){
+//			returnPtr = startPtr;
+//		}
+//
+////		UARTprintf("arr1 = %x\narr0 = %x\nsample = %x\nx = %d\n", arr[1], arr[2], sample, x);
 	}
+//	f_close(&sampleFile);
+//	result = f_open(&sampleFile, filename, FA_OPEN_EXISTING | FA_READ);
+//
+//	UARTprintf("open result = %d, size = %d\n", result, sampleFile.fsize);
+//	for(k = 0; k < 100; k++) {
+//			uint8_t arr[2];
+//			int16_t x = 0;
+//
+//			if((whereLast[button] + 2*k) < size) {
+//				result = f_read(&sampleFile, &arr[0], 2, &x);
+//				uint16_t sample = arr[1] | (arr[0] << 8);
+//				if(result != 12) {
+//					UARTprintf("arr0 = %x, arr1 = %x, x = %d\n", arr[0], arr[1], x);
+//					UARTprintf("read result = %d, sample = %x, k = %d\n", result, sample, k);
+//				}
+//
+//				*returnPtr = sample;
+//	//			UARTprintf("sample = %d\n", sample);
+//			} else {
+//				*returnPtr = 0;
+//				fileEnded = 1;
+//			}
+//	//
+//			returnPtr++;
+//	//
+//	//		if(returnPtr == startPtr + 1323){
+//	//			returnPtr = startPtr;
+//	//		}
+//	//
+//	////		UARTprintf("arr1 = %x\narr0 = %x\nsample = %x\nx = %d\n", arr[1], arr[2], sample, x);
+//		}
 
-	ADCIntClear(ADC0_BASE, 0);
 
-	ADCSequenceDataGet(ADC0_BASE, 0, ulADC0_Value);
+	UARTprintf("%d\n", whereLast[button]);
+//	if(fileEnded) {
+//		whereLast[button] = 0;
+//	} else {
+		whereLast[button] += SIZE_OF_PACKET*2;
+//	}
+//	f_read(&sampleFile, audioBuffer, SIZE_OF_PACKET, NULL);
 
-	UARTprintf("1a = %5d, 1b = %5d, 2a = %5d, 2b = %5d\r",
-			ulADC0_Value[0]/32, ulADC0_Value[1]/32,
-			ulADC0_Value[2]/32, ulADC0_Value[3]/32);
+	f_close(&sampleFile);
+
+	return fileEnded;
+
 }
+
+//void FXIntHandler(void)
+//{
+//	unsigned long ulADC0_Value[4];
+//
+//	while(!ADCIntStatus(ADC0_BASE, 0, false)) {
+//	}
+//
+//	ADCIntClear(ADC0_BASE, 0);
+//
+//	ADCSequenceDataGet(ADC0_BASE, 0, ulADC0_Value);
+//
+//	UARTprintf("1a = %5d, 1b = %5d, 2a = %5d, 2b = %5d\r",
+//			ulADC0_Value[0]/32, ulADC0_Value[1]/32,
+//			ulADC0_Value[2]/32, ulADC0_Value[3]/32);
+//}
 
 //*****************************************************************************
 //
@@ -568,7 +525,17 @@ main(void)
     char * filename = "00.dat";
     FIL testfile;
 
-    ROM_FPULazyStackingEnable();
+	uint8_t arr[2];
+	uint16_t x = 0;
+	uint16_t sample;
+
+	int16_t pkt1[SIZE_OF_PACKET];
+	int16_t pkt2[SIZE_OF_PACKET];
+//	int i;
+	uint8_t fileEnded = 1;
+
+
+
 
     for(i = 0; i < 16; i++) {
     	pressed[i] = 0;
@@ -589,8 +556,51 @@ main(void)
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
                        SYSCTL_XTAL_16MHZ);
 
-    // register work area
-    f_mount(0, &fs);
+    ROM_FPULazyStackingEnable();
+
+    //
+    // Configure SysTick for a 100Hz interrupt.  The FatFs driver wants a 10 ms
+    // tick.
+    //
+    ROM_SysTickPeriodSet(ROM_SysCtlClockGet() / 100);
+    ROM_SysTickEnable();
+    ROM_SysTickIntEnable();
+
+    //
+    // Configure and enable uDMA
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
+    SysCtlDelay(10);
+    ROM_uDMAControlBaseSet(&sDMAControlTable[0]);
+    ROM_uDMAEnable();
+
+    //
+    // Enable the USB controller.
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
+
+    //
+    // Set the USB pins to be controlled by the USB controller.
+
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+
+    ROM_GPIOPinTypeUSBAnalog(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     //
     // Enable and configure the GPIO port for the LED operation.
@@ -605,32 +615,17 @@ main(void)
 
     InitDAC();
 
-    InitADC();
+//    InitADC();
     //
     // Initialise Buttons
     //
 //    InitButtons();
 
-    //
-    // Configure SysTick for a 100Hz interrupt.  The FatFs driver wants a 10 ms
-    // tick.
-    //
-    ROM_SysTickPeriodSet(ROM_SysCtlClockGet() / 100);
-    ROM_SysTickEnable();
-    ROM_SysTickIntEnable();
 
-    //
-	// Enable Interrupts
-	//
-	ROM_IntMasterEnable();
 
-    //
-    // Configure and enable uDMA
-    //
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
-    SysCtlDelay(10);
-    ROM_uDMAControlBaseSet(&sDMAControlTable[0]);
-    ROM_uDMAEnable();
+
+
+
 
 
 
@@ -649,17 +644,7 @@ main(void)
     //
    // UpdateStatus("Disconnected", 1);
 
-    //
-    // Enable the USB controller.
-    //
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_USB0);
 
-    //
-    // Set the USB pins to be controlled by the USB controller.
-
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
-
-    ROM_GPIOPinTypeUSBAnalog(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 
     //
     // Set the USB stack mode to Device mode with VBUS monitoring.
@@ -680,19 +665,69 @@ main(void)
 
 //	result = f_open(&testfile, filename, FA_OPEN_EXISTING | FA_READ);
 //	UARTprintf("result is %d\n", result);
+//
+//
+//		result = f_read(&testfile, &arr[0], 2, &x);
+//		sample = arr[1] | (arr[0] << 8);
+//		UARTprintf("arr0 = %x, arr1 = %x, x = %d\n", arr[0], arr[1], x);
+//		UARTprintf("read result = %d, sample = %x\n", result, sample);
+//
+//
 //	f_close(&testfile);
+
+    //
+	// Enable Interrupts
+	//
+	ROM_IntMasterEnable();
+
     //
     // Initialise timers
     //
     InitTimers();
 
 
-    UARTprintf("starting...\n");
+
+    // register work area
+    f_mount(0, &fs);
+
     while(1) {
+    	SD_read_wav(0, &pkt1[0]);
+    //	pressed[0] = (pressed[0] + 1)%2;
 
-    	ADCProcessorTrigger(ADC0_BASE, 0);
+    	//poll_buttons(); -> update pressed[] arrays
 
-    	SysCtlDelay(SysCtlClockGet() / 120);
+//    	for(i = 0; i < 16; i++) {
+//    		if(pressed[i]) {
+//    //			if(playing[i]) {
+//    			UARTprintf("timer 2\n");
+//
+//    			SD_read_wav(i, &pkt1[0]);
+//    //				playing[i] = 1;
+//    //			}
+//    		} else {
+//    			if(playing[i]) { // not pressed and playing
+//    				if(latchHold[i]) { // latch
+//    //					fileEnded = SD_read_wav(i, &pkt1[0]);
+//    					if(fileEnded) {
+//    						playing[i] = 0;
+//    					}
+//    				} else { // hold
+//    					playing[i] = 0;
+//    				}
+//    			}
+//    		}
+//    	}
+//    	if(pressed[0]){
+//    		UARTprintf("if\n");
+//    		for(i = 0; i < SIZE_OF_PACKET; i++) {
+//    			cBuff[i] = pkt1[i];
+//    //			UARTprintf("pkt1 = %d\n", pkt1[i]);
+//    		}
+//    	}
+//    	pressed[0] = 0;
+//    	ADCProcessorTrigger(ADC0_BASE, 0);
+
+//    	SysCtlDelay(SysCtlClockGet() / 120);
     }
 }
 
@@ -708,19 +743,12 @@ __error__(char *pcFilename, unsigned long ulLine)
 }
 #endif
 
-//*****************************************************************************
-//
-// This is where the magic happens - reading samples from SD and polling
-// keypad buttons. Processing these packets within a circular buffer.
-//
-//*****************************************************************************
-
 // interrupt handler to fire at frequency 44.1 kHz for samples
 void SampleIntHandler(void)
 {
 //	// Clear the timer interrupt
 	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-////
+
 //	DACWrite(*readPtr);
 //	readPtr++;
 //
@@ -732,10 +760,10 @@ void SampleIntHandler(void)
 // interrupt handler to grab packets every 10 ms
 void PacketIntHandler(void)
 {
-	int16_t pkt1[SIZE_OF_PACKET];
-	int16_t pkt2[SIZE_OF_PACKET];
-	int i;
-	uint8_t fileEnded;
+//	int16_t pkt1[SIZE_OF_PACKET];
+//	int16_t pkt2[SIZE_OF_PACKET];
+//	int i;
+//	uint8_t fileEnded = 1;
 	
 //	pressed[0] = (pressed[0] + 1)%2;
 
@@ -757,13 +785,14 @@ void PacketIntHandler(void)
 //		if(pressed[i]) {
 ////			if(playing[i]) {
 //			UARTprintf("timer 2\n");
+//
 //			SD_read_wav(i, &pkt1[0]);
 ////				playing[i] = 1;
 ////			}
 //		} else {
 //			if(playing[i]) { // not pressed and playing
 //				if(latchHold[i]) { // latch
-//					fileEnded = SD_read_wav(i, &pkt1[0]);
+////					fileEnded = SD_read_wav(i, &pkt1[0]);
 //					if(fileEnded) {
 //						playing[i] = 0;
 //					}
@@ -774,14 +803,13 @@ void PacketIntHandler(void)
 //		}
 //	}
 //	if(pressed[0]){
-//		UARTprintf("if\n");
 //		for(i = 0; i < SIZE_OF_PACKET; i++) {
 //			cBuff[i] = pkt1[i];
 ////			UARTprintf("pkt1 = %d\n", pkt1[i]);
 //		}
 //	}
 //	pressed[0] = 0;
-}
+//}
 
 
 //	// if there are more than one playing, which ones should be playing?
@@ -795,5 +823,5 @@ void PacketIntHandler(void)
 ////	if(writePtr == startPtr + 1323) {
 ////		writePtr = 0;
 ////	}
-////}
+}
 

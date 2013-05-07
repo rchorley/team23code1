@@ -15,6 +15,7 @@ $(GEN_CMDS__FLAG) \
 "./startup_ccs.obj" \
 "./mmc-ek-lm4f232h5qd.obj" \
 "./main.obj" \
+"./init.obj" \
 "./ff.obj" \
 "./cmdline.obj" \
 -l"C:\StellarisWare\driverlib\ccs-cm4f\Debug\driverlib-cm4f.lib" \
@@ -132,8 +133,8 @@ april20.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(TMS470_EXECUTABLE_OUTPUTS__QUOTED) "april20.out"
-	-$(RM) "cmdline.pp" "ff.pp" "main.pp" "mmc-ek-lm4f232h5qd.pp" "startup_ccs.pp" "uartstdio.pp" "usb_msc_structs.pp" "usbdsdcard.pp" "ustdlib.pp" 
-	-$(RM) "cmdline.obj" "ff.obj" "main.obj" "mmc-ek-lm4f232h5qd.obj" "startup_ccs.obj" "uartstdio.obj" "usb_msc_structs.obj" "usbdsdcard.obj" "ustdlib.obj" 
+	-$(RM) "cmdline.pp" "ff.pp" "init.pp" "main.pp" "mmc-ek-lm4f232h5qd.pp" "startup_ccs.pp" "uartstdio.pp" "usb_msc_structs.pp" "usbdsdcard.pp" "ustdlib.pp" 
+	-$(RM) "cmdline.obj" "ff.obj" "init.obj" "main.obj" "mmc-ek-lm4f232h5qd.obj" "startup_ccs.obj" "uartstdio.obj" "usb_msc_structs.obj" "usbdsdcard.obj" "ustdlib.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 
