@@ -19,6 +19,8 @@ C:/StellarisWare/third_party/fatfs/src/ff.c \
 ../timers.c \
 ../uart.c \
 C:/StellarisWare/utils/uartstdio.c \
+../usb_msc_structs.c \
+../usbdsdcard.c \
 C:/StellarisWare/utils/ustdlib.c 
 
 OBJS += \
@@ -34,6 +36,8 @@ OBJS += \
 ./timers.obj \
 ./uart.obj \
 ./uartstdio.obj \
+./usb_msc_structs.obj \
+./usbdsdcard.obj \
 ./ustdlib.obj 
 
 C_DEPS += \
@@ -49,6 +53,8 @@ C_DEPS += \
 ./timers.pp \
 ./uart.pp \
 ./uartstdio.pp \
+./usb_msc_structs.pp \
+./usbdsdcard.pp \
 ./ustdlib.pp 
 
 C_DEPS__QUOTED += \
@@ -64,6 +70,8 @@ C_DEPS__QUOTED += \
 "timers.pp" \
 "uart.pp" \
 "uartstdio.pp" \
+"usb_msc_structs.pp" \
+"usbdsdcard.pp" \
 "ustdlib.pp" 
 
 OBJS__QUOTED += \
@@ -79,6 +87,8 @@ OBJS__QUOTED += \
 "timers.obj" \
 "uart.obj" \
 "uartstdio.obj" \
+"usb_msc_structs.obj" \
+"usbdsdcard.obj" \
 "ustdlib.obj" 
 
 C_SRCS__QUOTED += \
@@ -94,6 +104,8 @@ C_SRCS__QUOTED += \
 "../timers.c" \
 "../uart.c" \
 "C:/StellarisWare/utils/uartstdio.c" \
+"../usb_msc_structs.c" \
+"../usbdsdcard.c" \
 "C:/StellarisWare/utils/ustdlib.c" 
 
 

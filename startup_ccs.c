@@ -59,7 +59,7 @@ extern void timer2b_int_handler(void);
 extern void SysTickHandler(void);
 extern void UARTStdioIntHandler(void);
 extern void FXIntHandler(void);
-//extern void USB0DeviceIntHandler(void);
+extern void USB0DeviceIntHandler(void);
 
 //*****************************************************************************
 //
@@ -132,7 +132,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // CAN2
     IntDefaultHandler,                      // Ethernet
     IntDefaultHandler,                      // Hibernate
-    IntDefaultHandler,                      // USB0
+    USB0DeviceIntHandler,                      // USB0
     IntDefaultHandler,                      // PWM Generator 3
     IntDefaultHandler,                      // uDMA Software Transfer
     IntDefaultHandler,                      // uDMA Error

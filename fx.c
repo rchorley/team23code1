@@ -135,7 +135,7 @@ void fx_apply(uint16_t * pkt) {
 	int i;
 	uint16_t sample;
 	int16_t sCentered;
-	float32_t pktFloat;
+//	float32_t pktFloat;
 
 	//testing
 	FX1mode = LOWPASS;
@@ -158,7 +158,7 @@ void fx_apply(uint16_t * pkt) {
 			// prevent overflow
 			sample = pkt[i];
 			sCentered = sample - (1 << 15);
-			pktFloat = (float32_t)(sample >> 2);
+//			pktFloat = (float32_t)(sample >> 2);
 			inputF32[i] = sCentered;
 		}
 
@@ -172,8 +172,8 @@ void fx_apply(uint16_t * pkt) {
 	} else {
 		if(FX1mode == BITWISE_KO) {
 			// counters increment in steps of 32 from 0 : 4064
-			counter1a = (uint16_t)(paramA)*32; // bitwise AND this counter then,
-			counter1b = (uint16_t)(paramB)*32; // bitwise OR this counter with the output sample
+			counter1a = (uint16_t)(param1a)*32; // bitwise AND this counter then,
+			counter1b = (uint16_t)(param1b)*32; // bitwise OR this counter with the output sample
 
 			for(i = 0; i < PKT_SIZE; i++) {
 				pkt[i] = (pkt[i] & counter1a) ^ counter1b;
@@ -199,7 +199,7 @@ void fx_apply(uint16_t * pkt) {
 			// prevent overflow
 			sample = pkt[i];
 			sCentered = sample - (1 << 15);
-			pktFloat = (float32_t)(sample >> 2);
+//			pktFloat = (float32_t)(sample >> 2);
 			inputF32[i] = sCentered;
 		}
 
@@ -322,9 +322,9 @@ void bitcrusher(uint16_t * pkt) {
 }
 void bitwiseko(uint16_t * pkt) {
 
-	int i;
-
-	for(i = 0; i < PKT_SIZE; i++) {
-		pkt[i] = (pkt[i] & counter1) ^ counter2;
-	}
+//	int i;
+//
+//	for(i = 0; i < PKT_SIZE; i++) {
+//		pkt[i] = (pkt[i] & counter1) ^ counter2;
+//	}
 }

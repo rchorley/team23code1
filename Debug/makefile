@@ -9,6 +9,8 @@ CG_TOOL_ROOT := C:/ti/ccsv5/tools/compiler/tms470_4.9.5
 ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
 "./ustdlib.obj" \
+"./usbdsdcard.obj" \
+"./usb_msc_structs.obj" \
 "./uartstdio.obj" \
 "./uart.obj" \
 "./timers.obj" \
@@ -22,6 +24,7 @@ $(GEN_CMDS__FLAG) \
 "./btn.obj" \
 "./adc.obj" \
 -l"libc.a" \
+-l"C:\StellarisWare\usblib\ccs-cm4f\Debug\usblib-cm4f.lib" \
 -l"C:\StellarisWare\CMSIS-SP-00300-r3p1-00rel0\dsplib-cm4f\Debug\dsplib-cm4f.lib" \
 -l"C:\StellarisWare\driverlib\ccs-cm4f\Debug\driverlib-cm4f.lib" \
 "../lm4f120h5qr.cmd" \
@@ -136,8 +139,8 @@ T23MPC.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(TMS470_EXECUTABLE_OUTPUTS__QUOTED) "T23MPC.out"
-	-$(RM) "adc.pp" "btn.pp" "dac.pp" "ff.pp" "fx.pp" "main.pp" "mmc-ek-lm4f232h5qr.pp" "sdcard.pp" "startup_ccs.pp" "timers.pp" "uart.pp" "uartstdio.pp" "ustdlib.pp" 
-	-$(RM) "adc.obj" "btn.obj" "dac.obj" "ff.obj" "fx.obj" "main.obj" "mmc-ek-lm4f232h5qr.obj" "sdcard.obj" "startup_ccs.obj" "timers.obj" "uart.obj" "uartstdio.obj" "ustdlib.obj" 
+	-$(RM) "adc.pp" "btn.pp" "dac.pp" "ff.pp" "fx.pp" "main.pp" "mmc-ek-lm4f232h5qr.pp" "sdcard.pp" "startup_ccs.pp" "timers.pp" "uart.pp" "uartstdio.pp" "usb_msc_structs.pp" "usbdsdcard.pp" "ustdlib.pp" 
+	-$(RM) "adc.obj" "btn.obj" "dac.obj" "ff.obj" "fx.obj" "main.obj" "mmc-ek-lm4f232h5qr.obj" "sdcard.obj" "startup_ccs.obj" "timers.obj" "uart.obj" "uartstdio.obj" "usb_msc_structs.obj" "usbdsdcard.obj" "ustdlib.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

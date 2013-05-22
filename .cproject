@@ -75,6 +75,7 @@
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.TMS470_4.9.linkerID.LIBRARY.1873192594" name="Include library file or command file as input (--library, -l)" superClass="com.ti.ccstudio.buildDefinitions.TMS470_4.9.linkerID.LIBRARY" valueType="libs">
 									<listOptionValue builtIn="false" value="&quot;libc.a&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\StellarisWare\usblib\ccs-cm4f\Debug\usblib-cm4f.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\StellarisWare\CMSIS-SP-00300-r3p1-00rel0\dsplib-cm4f\Debug\dsplib-cm4f.lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\StellarisWare\driverlib\ccs-cm4f\Debug\driverlib-cm4f.lib&quot;"/>
 								</option>
