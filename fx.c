@@ -42,11 +42,8 @@ float32_t alpha, omega, a0, a1, a2, b0, b1, b2, c1;
 float32_t fc, Q;
 float32_t fs = 44100;
 
-uint8_t filter1;
-uint8_t filter2;
-
 float32_t decimate, bitcrush; // decimator/bitcrusher
-uint16_t counter1, counter2; // bitwise ko
+uint16_t counter1a, counter1b, counter2a, counter2b; // bitwise ko
 
 // what effects to use
 extern uint8_t FX1mode, FX2mode;
@@ -140,17 +137,12 @@ void fx_apply(uint16_t * pkt) {
 	int16_t sCentered;
 	float32_t pktFloat;
 
-	filter1 = 0;
-	filter2 = 0;
-
 	//testing
 	FX1mode = LOWPASS;
 	FX2mode = HIGHPASS;
 
 	if(FX1mode == LOWPASS || FX1mode == HIGHPASS ||
 			FX1mode == BANDPASS ||FX1mode == NOTCH) {
-
-		filter1 = 1;
 
 		fc = 20.0f+(param1a/128.0f)*8000.0f; // 20 : 8000 Hz
 		Q = (param1b/128.0f); // 0 : 1
@@ -178,13 +170,20 @@ void fx_apply(uint16_t * pkt) {
 		}
 
 	} else {
+		if(FX1mode == BITWISE_KO) {
+			// counters increment in steps of 32 from 0 : 4064
+			counter1a = (uint16_t)(paramA)*32; // bitwise AND this counter then,
+			counter1b = (uint16_t)(paramB)*32; // bitwise OR this counter with the output sample
+
+			for(i = 0; i < PKT_SIZE; i++) {
+				pkt[i] = (pkt[i] & counter1a) ^ counter1b;
+			}
+		}
 		// fx1 is either bitcrush, ko, echo or delay
 	}
 
 	if(FX2mode == LOWPASS || FX2mode == HIGHPASS ||
 			FX2mode == BANDPASS ||FX2mode == NOTCH) {
-
-		filter2 = 1;
 
 		fc = 20.0f+(param2a/128.0f)*8000.0f; // 20 : 8000 Hz
 		Q = (param2b/128.0f); // 0 : 1
@@ -211,6 +210,15 @@ void fx_apply(uint16_t * pkt) {
 			pkt[i] = (uint16_t)(outputF32[i] + (1 << 15));
 		}
 	} else {
+		if(FX2mode == BITWISE_KO) {
+			// counters increment in steps of 32 from 0 : 4064
+			counter2a = (uint16_t)(param2a)*32; // bitwise AND this counter then,
+			counter2b = (uint16_t)(param2b)*32; // bitwise OR this counter with the output sample
+
+			for(i = 0; i < PKT_SIZE; i++) {
+				pkt[i] = (pkt[i] & counter2a) ^ counter2b;
+			}
+		}
 		// fx2 is either bitcrush, ko, echo or delay
 	}
 
