@@ -9,18 +9,21 @@ CG_TOOL_ROOT := C:/ti/ccsv5/tools/compiler/tms470_4.9.5
 ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
 "./ustdlib.obj" \
-"./usbdsdcard.obj" \
-"./usb_msc_structs.obj" \
 "./uartstdio.obj" \
+"./uart.obj" \
+"./timers.obj" \
 "./startup_ccs.obj" \
-"./mmc-ek-lm4f232h5qd.obj" \
+"./sdcard.obj" \
+"./mmc-ek-lm4f232h5qr.obj" \
 "./main.obj" \
-"./init.obj" \
+"./fx.obj" \
 "./ff.obj" \
-"./cmdline.obj" \
--l"C:\StellarisWare\driverlib\ccs-cm4f\Debug\driverlib-cm4f.lib" \
--l"C:\StellarisWare\usblib\ccs-cm4f\Debug\usblib-cm4f.lib" \
+"./dac.obj" \
+"./btn.obj" \
+"./adc.obj" \
 -l"libc.a" \
+-l"C:\StellarisWare\CMSIS-SP-00300-r3p1-00rel0\dsplib-cm4f\Debug\dsplib-cm4f.lib" \
+-l"C:\StellarisWare\driverlib\ccs-cm4f\Debug\driverlib-cm4f.lib" \
 "../lm4f120h5qr.cmd" \
 
 -include ../makefile.init
@@ -120,21 +123,21 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: april20.out
+all: T23MPC.out
 
 # Tool invocations
-april20.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
+T23MPC.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 -g --gcc --define=ccs="ccs" --define=PART_LM4F120H5QR --define=TARGET_IS_BLIZZARD_RA2 --diag_warning=225 --display_error_number --ual -z --stack_size=1024 -m"april20.map" --heap_size=0 -i"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/lib" -i"C:/StellarisWare/third_party" -i"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include" --reread_libs --warn_sections --display_error_number --rom_model -o "april20.out" $(ORDERED_OBJS)
+	"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 -g --gcc --define=ccs="ccs" --define=ARM_MATH_CM4 --define=PART_LM4F120H5QR --define=TARGET_IS_BLIZZARD_RA2 --define=UART_BUFFERED --diag_warning=225 --display_error_number -z --stack_size=0x2000 -m"T23MPC.map" --heap_size=0 -i"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/lib" -i"C:/ti/ccsv5/tools/compiler/tms470_4.9.5/include" --reread_libs --warn_sections --display_error_number --rom_model -o "T23MPC.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(TMS470_EXECUTABLE_OUTPUTS__QUOTED) "april20.out"
-	-$(RM) "cmdline.pp" "ff.pp" "init.pp" "main.pp" "mmc-ek-lm4f232h5qd.pp" "startup_ccs.pp" "uartstdio.pp" "usb_msc_structs.pp" "usbdsdcard.pp" "ustdlib.pp" 
-	-$(RM) "cmdline.obj" "ff.obj" "init.obj" "main.obj" "mmc-ek-lm4f232h5qd.obj" "startup_ccs.obj" "uartstdio.obj" "usb_msc_structs.obj" "usbdsdcard.obj" "ustdlib.obj" 
+	-$(RM) $(TMS470_EXECUTABLE_OUTPUTS__QUOTED) "T23MPC.out"
+	-$(RM) "adc.pp" "btn.pp" "dac.pp" "ff.pp" "fx.pp" "main.pp" "mmc-ek-lm4f232h5qr.pp" "sdcard.pp" "startup_ccs.pp" "timers.pp" "uart.pp" "uartstdio.pp" "ustdlib.pp" 
+	-$(RM) "adc.obj" "btn.obj" "dac.obj" "ff.obj" "fx.obj" "main.obj" "mmc-ek-lm4f232h5qr.obj" "sdcard.obj" "startup_ccs.obj" "timers.obj" "uart.obj" "uartstdio.obj" "ustdlib.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

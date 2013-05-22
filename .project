@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>april20</name>
+	<name>T23MPC</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -82,29 +82,19 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>cmdline.c</name>
-			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/StellarisWare/utils/cmdline.c</locationURI>
-		</link>
-		<link>
 			<name>ff.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/StellarisWare/third_party/fatfs/src/ff.c</locationURI>
-		</link>
-		<link>
-			<name>mmc-ek-lm4f232h5qd.c</name>
-			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/StellarisWare/third_party/fatfs/port/mmc-ek-lm4f232h5qd.c</locationURI>
+			<locationURI>PARENT-4-PROJECT_LOC/StellarisWare/third_party/fatfs/src/ff.c</locationURI>
 		</link>
 		<link>
 			<name>uartstdio.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/StellarisWare/utils/uartstdio.c</locationURI>
+			<locationURI>PARENT-4-PROJECT_LOC/StellarisWare/utils/uartstdio.c</locationURI>
 		</link>
 		<link>
 			<name>ustdlib.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-PROJECT_LOC/StellarisWare/utils/ustdlib.c</locationURI>
+			<locationURI>PARENT-4-PROJECT_LOC/StellarisWare/utils/ustdlib.c</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

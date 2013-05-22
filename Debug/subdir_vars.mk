@@ -7,75 +7,93 @@ CMD_SRCS += \
 ../lm4f120h5qr.cmd 
 
 C_SRCS += \
-C:/StellarisWare/utils/cmdline.c \
+../adc.c \
+../btn.c \
+../dac.c \
 C:/StellarisWare/third_party/fatfs/src/ff.c \
-../init.c \
+../fx.c \
 ../main.c \
-C:/StellarisWare/third_party/fatfs/port/mmc-ek-lm4f232h5qd.c \
+../mmc-ek-lm4f232h5qr.c \
+../sdcard.c \
 ../startup_ccs.c \
+../timers.c \
+../uart.c \
 C:/StellarisWare/utils/uartstdio.c \
-../usb_msc_structs.c \
-../usbdsdcard.c \
 C:/StellarisWare/utils/ustdlib.c 
 
 OBJS += \
-./cmdline.obj \
+./adc.obj \
+./btn.obj \
+./dac.obj \
 ./ff.obj \
-./init.obj \
+./fx.obj \
 ./main.obj \
-./mmc-ek-lm4f232h5qd.obj \
+./mmc-ek-lm4f232h5qr.obj \
+./sdcard.obj \
 ./startup_ccs.obj \
+./timers.obj \
+./uart.obj \
 ./uartstdio.obj \
-./usb_msc_structs.obj \
-./usbdsdcard.obj \
 ./ustdlib.obj 
 
 C_DEPS += \
-./cmdline.pp \
+./adc.pp \
+./btn.pp \
+./dac.pp \
 ./ff.pp \
-./init.pp \
+./fx.pp \
 ./main.pp \
-./mmc-ek-lm4f232h5qd.pp \
+./mmc-ek-lm4f232h5qr.pp \
+./sdcard.pp \
 ./startup_ccs.pp \
+./timers.pp \
+./uart.pp \
 ./uartstdio.pp \
-./usb_msc_structs.pp \
-./usbdsdcard.pp \
 ./ustdlib.pp 
 
 C_DEPS__QUOTED += \
-"cmdline.pp" \
+"adc.pp" \
+"btn.pp" \
+"dac.pp" \
 "ff.pp" \
-"init.pp" \
+"fx.pp" \
 "main.pp" \
-"mmc-ek-lm4f232h5qd.pp" \
+"mmc-ek-lm4f232h5qr.pp" \
+"sdcard.pp" \
 "startup_ccs.pp" \
+"timers.pp" \
+"uart.pp" \
 "uartstdio.pp" \
-"usb_msc_structs.pp" \
-"usbdsdcard.pp" \
 "ustdlib.pp" 
 
 OBJS__QUOTED += \
-"cmdline.obj" \
+"adc.obj" \
+"btn.obj" \
+"dac.obj" \
 "ff.obj" \
-"init.obj" \
+"fx.obj" \
 "main.obj" \
-"mmc-ek-lm4f232h5qd.obj" \
+"mmc-ek-lm4f232h5qr.obj" \
+"sdcard.obj" \
 "startup_ccs.obj" \
+"timers.obj" \
+"uart.obj" \
 "uartstdio.obj" \
-"usb_msc_structs.obj" \
-"usbdsdcard.obj" \
 "ustdlib.obj" 
 
 C_SRCS__QUOTED += \
-"C:/StellarisWare/utils/cmdline.c" \
+"../adc.c" \
+"../btn.c" \
+"../dac.c" \
 "C:/StellarisWare/third_party/fatfs/src/ff.c" \
-"../init.c" \
+"../fx.c" \
 "../main.c" \
-"C:/StellarisWare/third_party/fatfs/port/mmc-ek-lm4f232h5qd.c" \
+"../mmc-ek-lm4f232h5qr.c" \
+"../sdcard.c" \
 "../startup_ccs.c" \
+"../timers.c" \
+"../uart.c" \
 "C:/StellarisWare/utils/uartstdio.c" \
-"../usb_msc_structs.c" \
-"../usbdsdcard.c" \
 "C:/StellarisWare/utils/ustdlib.c" 
 
 
