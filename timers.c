@@ -76,8 +76,8 @@ uint8_t testTimer1 = 1;
 uint8_t testTimer2 = 1;
 uint16_t testSample = 0;
 
-float param1a, param1b, param2a, param2b;
 
+float param1a, param1b, param2a, param2b;
 
 void timers_init(void) {
 	unsigned long ulDACPeriod, ulPktPeriod, ulTempoPeriod, ulPollPeriod;
@@ -486,4 +486,3 @@ void FXIntHandler(void)
 //	find_filter_coeffs(FX1mode, FX2mode, paramA, paramB);
 //	UARTprintf("paramA = %3d, paramB = %3d\r", (int)paramA, (int)paramB);
 }
-

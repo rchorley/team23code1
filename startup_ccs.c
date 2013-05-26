@@ -58,8 +58,8 @@ extern void timer2_int_handler(void);
 extern void timer2b_int_handler(void);
 extern void SysTickHandler(void);
 extern void UARTStdioIntHandler(void);
-extern void FXIntHandler(void);
 extern void USB0DeviceIntHandler(void);
+extern void FXIntHandler(void);
 
 //*****************************************************************************
 //

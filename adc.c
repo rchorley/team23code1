@@ -52,4 +52,3 @@ void adc_init(void) {
 
     ADCIntClear(ADC0_BASE, 0);
 }
-

@@ -49,7 +49,10 @@ uint16_t counter1a, counter1b, counter2a, counter2b; // bitwise ko
 extern uint8_t FX1mode, FX2mode;
 extern float param1a, param1b, param2a, param2b;
 
-
+void fx_init(void) {
+	arm_biquad_cascade_df1_init_f32(&S1, numStages, &pCoeffs1[0], &iirStateF32a[0]);
+	arm_biquad_cascade_df1_init_f32(&S2, numStages, &pCoeffs2[0], &iirStateF32b[0]);
+}
 
 void find_filter_coeffs(uint8_t fxNum, uint8_t filterType, float32_t fc, float32_t Q) {
 
@@ -125,21 +128,23 @@ void find_filter_coeffs(uint8_t fxNum, uint8_t filterType, float32_t fc, float32
 
 }
 
-void fx_init(void) {
-	arm_biquad_cascade_df1_init_f32(&S1, numStages, &pCoeffs1[0], &iirStateF32a[0]);
-	arm_biquad_cascade_df1_init_f32(&S2, numStages, &pCoeffs2[0], &iirStateF32b[0]);
-}
-
 void fx_apply(uint16_t * pkt) {
 
 	int i;
 	uint16_t sample;
 	int16_t sCentered;
+	uint16_t bitCrusher;
+	int k;
+
+	uint16_t downSample;
+
 //	float32_t pktFloat;
 
 	//testing
-	FX1mode = LOWPASS;
-	FX2mode = HIGHPASS;
+	//FX1mode = BITWISE_KO;
+	//FX2mode = HIGHPASS;
+
+	// FX 2 ************************************************************
 
 	if(FX1mode == LOWPASS || FX1mode == HIGHPASS ||
 			FX1mode == BANDPASS ||FX1mode == NOTCH) {
@@ -172,15 +177,29 @@ void fx_apply(uint16_t * pkt) {
 	} else {
 		if(FX1mode == BITWISE_KO) {
 			// counters increment in steps of 32 from 0 : 4064
-			counter1a = (uint16_t)(param1a)*32; // bitwise AND this counter then,
-			counter1b = (uint16_t)(param1b)*32; // bitwise OR this counter with the output sample
+			counter1a = (uint16_t)(param1a)*512; // bitwise AND this counter then,
+			counter1b = (uint16_t)(param1b)*512; // bitwise OR this counter with the output sample
 
 			for(i = 0; i < PKT_SIZE; i++) {
 				pkt[i] = (pkt[i] & counter1a) ^ counter1b;
 			}
 		}
-		// fx1 is either bitcrush, ko, echo or delay
+		if(FX1mode == DECI_BIT_CRUSH) {
+
+			downSample = ((param1a/2) + 6);
+
+			for (i = 0; i < PKT_SIZE; i++) {
+				bitCrusher = pkt[i];
+				bitCrusher >>= downSample;
+				bitCrusher <<= downSample;
+				pkt[i] = bitCrusher;
+			}
+		}
+
+		// fx1 is either bitcrush, echo or delay
 	}
+
+	// FX 2 ************************************************************
 
 	if(FX2mode == LOWPASS || FX2mode == HIGHPASS ||
 			FX2mode == BANDPASS ||FX2mode == NOTCH) {
@@ -219,95 +238,23 @@ void fx_apply(uint16_t * pkt) {
 				pkt[i] = (pkt[i] & counter2a) ^ counter2b;
 			}
 		}
-		// fx2 is either bitcrush, ko, echo or delay
+
+		// fx2 is either bitcrush, echo or delay
 	}
-
-//	float32_t inputF32[PKT_SIZE];
-//	float32_t outputF32[PKT_SIZE];
-//
-//	uint8_t numStages = 1;
-//	float32_t iirStateF32[2];
-//	uint16_t sample;
-//	float32_t pktFloat;
-
-	// convert to floats -1 : 1
-//	for(i = 0; i < PKT_SIZE; i++) {
-////		// prevent overflow
-//		sample = pkt[i];
-//		int16_t sCentered = sample - (1 << 15);
-//		pktFloat = (float32_t)(sample >> 2); // div 4
-//		inputF32[i] = sCentered; // pktFloat; // (float32_t)((pktFloat/32768.0f) - 0.25f);
-//	}
-//
-//	// apply filter(s)
-//	if(filter1) {
-//		arm_biquad_cascade_df1_f32(&S1, &inputF32[0], &outputF32[0], PKT_SIZE);
-//	}
-//	if(filter2) {
-//		arm_biquad_cascade_df1_f32(&S2, &inputF32[0], &outputF32[0], PKT_SIZE);
-//	}
-//
-//
-//	// convert back to uint16_t
-//	for(i = 0; i < PKT_SIZE; i++) {
-//		pkt[i] = (uint16_t)(outputF32[i] + (1 << 15));
-//	}
-//
-////	if(filterType = BITWISE_KO) {
-////		bitwiseko(&pkt[0]);
-////	}
 }
 
-//void process_FX(uint8_t FX1mode, uint8_t FX2mode, float32_t param1a,
-//		float32_t param1b, float32_t param2a, float32_t param2b) {
-//
-////	filter1 = 0;
-////	filter2 = 0;
-////
-////	if(FX1mode == LOWPASS || FX1mode == HIGHPASS ||
-////			FX1mode == BANDPASS ||FX1mode == NOTCH) {
-////		filter1 = 1;
-////		find_filter_coeffs(1, FXmode1, param1a, param1b);
-////	}
-//
-//}
+void lowpass(uint16_t * pkt) {
 
-//void lowpass(uint16_t * pkt) {
-//
-//}
-//void highpass(uint16_t * pkt) {
-//
-//}
-//void bandpass(uint16_t * pkt) {
-//
-//}
-//void bandstop(uint16_t * pkt) {
-//
-//}
+}
+void highpass(uint16_t * pkt) {
 
-//void filter(uint16_t * pkt) {
-//
-//	int i;
-//	uint16_t sample;
-//
-//	// convert to floats -1 : 1
-//	for(i = 0; i < PKT_SIZE; i++) {
-//
-//		// prevent overflow
-//		sample = pkt[i];
-//		int16_t sCentered = sample - (1 << 15);
-//		pktFloat = (float32_t)(sample >> 2); // div 4
-//		inputF32[i] = sCentered;
-//	}
-//
-//	// apply filter
-//	arm_biquad_cascade_df1_f32(&S, &inputF32[0], &outputF32[0], PKT_SIZE);
-//
-//	// convert back to uint16_t
-//	for(i = 0; i < PKT_SIZE; i++) {
-//		pkt[i] = (uint16_t)(outputF32[i] + (1 << 15));
-//	}
-//}
+}
+void bandpass(uint16_t * pkt) {
+
+}
+void bandstop(uint16_t * pkt) {
+
+}
 void delay(uint16_t * pkt) {
 
 }
@@ -322,9 +269,4 @@ void bitcrusher(uint16_t * pkt) {
 }
 void bitwiseko(uint16_t * pkt) {
 
-//	int i;
-//
-//	for(i = 0; i < PKT_SIZE; i++) {
-//		pkt[i] = (pkt[i] & counter1) ^ counter2;
-//	}
 }

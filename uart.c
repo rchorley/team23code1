@@ -27,4 +27,3 @@ void uart_init(void) {
 
 	UARTprintf("%c-------- Loaded --------\n", 0x0C);
 }
-

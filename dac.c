@@ -46,10 +46,8 @@ void dac_write(uint16_t sample) {
 	// 0x3000 = command data
 	// Remaining 12 bits = audio data
 	// Will be update to 16 bit
-	uint16_t dacOutput = ((sample >> 4) & 0x0FFF) | 0x3000; // CHECK THIS
+	uint16_t dacOutput = ((sample >> 4) & 0x0FFF) | 0x7000; // CHECK THIS
 
 	ROM_SSIDataPut(SSI2_BASE, dacOutput);
-
-
 
 }

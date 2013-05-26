@@ -130,7 +130,7 @@ void sdcard_resetFile(FIL * file) {
 	FRESULT fres = f_lseek(file, 0);
 
 	if (fres != (FRESULT)FR_OK) {
-//		UARTprintf("f_lseek result: %d\r\n", fres);
+		UARTprintf("f_lseek result: %d\r\n", fres);
 	}
 
 }
@@ -267,5 +267,3 @@ void sdcard_closeFile(FIL * file) {
 		UARTprintf("f_close result: %d\r\n", fres);
 	}
 }
-
-
